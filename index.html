@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitter Sentiment Analysis</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #172033;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px #0000000d;
+    }
+
+    h1 { margin-top: 0; }
+
+    p {
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    label {
+      display: block;
+      margin-top: 18px;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 13px;
+      margin-top: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 18px;
+      border: 0;
+      border-radius: 9px;
+      background: #2563eb;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    #result {
+      display: none;
+      margin-top: 22px;
+      padding: 18px;
+      background: #f8fafc;
+      border-radius: 10px;
+    }
+
+    #sentiment {
+      font-size: 24px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="card">
+      <h1>Twitter Sentiment Analysis</h1>
+
+      <p>
+        Analyze tweets with a machine learning model
+        trained to classify sentiment as positive,
+        negative, neutral, or irrelevant.
+      </p>
+
+      <label for="entity">Topic or brand</label>
+      <input id="entity" value="Borderlands"
+             maxlength="200" placeholder="e.g. Apple">
+
+      <label for="tweet">Enter your tweet</label>
+      <textarea id="tweet" maxlength="5000"
+        placeholder="Write a tweet to analyze..."></textarea>
+
+      <button id="analyze">Analyze Sentiment</button>
+
+      <section id="result" aria-live="polite">
+        <div id="sentiment"></div>
+        <p id="message"></p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const entity = document.getElementById("entity");
+    const tweet = document.getElementById("tweet");
+    const button = document.getElementById("analyze");
+    const result = document.getElementById("result");
+    const sentiment = document.getElementById("sentiment");
+    const message = document.getElementById("message");
+
+    button.addEventListener("click", async () => {
+      if (!tweet.value.trim()) {
+        alert("Please enter a tweet.");
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Analyzing...";
+      result.style.display = "block";
+      sentiment.textContent = "Analyzing...";
+      message.textContent = "";
+
+      try {
+        const response = await fetch("/api/predict", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            entity: entity.value,
+            text: tweet.value
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Prediction failed");
+        }
+
+        sentiment.textContent = data.sentiment.toUpperCase();
+
+        const colors = {
+          POSITIVE: "#15803d",
+          NEGATIVE: "#b91c1c",
+          NEUTRAL: "#475569",
+          IRRELEVANT: "#7c3aed"
+        };
+
+        sentiment.style.color =
+          colors[data.sentiment.toUpperCase()] || "#172033";
+
+        message.textContent =
+          "Predicted sentiment for your tweet.";
+
+      } catch (error) {
+        sentiment.textContent = "Unable to analyze";
+        sentiment.style.color = "#b91c1c";
+        message.textContent = error.message;
+      } finally {
+        button.disabled = false;
+        button.textContent = "Analyze Sentiment";
+      }
+    });
+  </script>
+</body>
+</html>
